@@ -1,3 +1,4 @@
 get_lock_failed: "&c无法获取锁, 请再次尝试, 如果持续提示本消息请联系管理员"
 item_not_exist: "&c物品不存在, 可能已经被他人拿走了, 请尝试重新打开界面"
 get_success: "&a取回成功! 你拿到了 {0}"
+drop_success: "&a丢弃成功, 你丢弃了 {0}"

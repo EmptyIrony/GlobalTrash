@@ -21,11 +21,29 @@ import taboolib.module.ui.type.PageableChest
 import taboolib.platform.util.sendLang
 import java.util.UUID
 
+@Config("ui.yml")
+lateinit var uiConfig: Configuration
+
+fun PageableChest<*>.setupBasic(player: Player) {
+    setPreviousPage(getSlots('<').first()) { _, _ ->
+        uiConfig.getItemStack("previous")!!
+    }
+    setNextPage(getSlots('>').first()) { _, _ ->
+        uiConfig.getItemStack("next")!!
+    }
+    set('!', uiConfig.getItemStack("back")!!) {
+        isCancelled = true
+        submit(delay = 1L) {
+            uiConfig.getStringColored("back.command")!!.replace(
+                "%player%", player.name
+            ).apply {
+                Bukkit.dispatchCommand(player, this)
+            }
+        }
+    }
+}
+
 object GlobalTrashUI {
-
-    @Config("ui.yml")
-    lateinit var uiConfig: Configuration
-
     fun open(player: Player) {
         submitChain {
             val items = getGlobalItems()
@@ -77,22 +95,8 @@ object GlobalTrashUI {
                 }
             }
             onClick { event -> event.isCancelled = true}
-            setPreviousPage(getSlots('<').first()) { _, _ ->
-                uiConfig.getItemStack("previous")!!
-            }
-            setNextPage(getSlots('>').first()) { _, _ ->
-                uiConfig.getItemStack("next")!!
-            }
-            set('!', uiConfig.getItemStack("back")!!) {
-                isCancelled = true
-                submit(delay = 1L) {
-                    uiConfig.getStringColored("back.command")!!.replace(
-                        "%player%", player.name
-                    ).apply {
-                        Bukkit.dispatchCommand(player, this)
-                    }
-                }
-            }
+
+            setupBasic(player)
         }
     }
 
