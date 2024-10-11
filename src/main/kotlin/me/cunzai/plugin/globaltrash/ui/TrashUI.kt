@@ -14,7 +14,7 @@ object TrashUI {
     fun open(player: Player) {
         val trashData = cache.remove(player.uniqueId) ?: return
         player.openMenu<PageableChest<ItemStack>>("1") {
-
+//
         }
     }
 
