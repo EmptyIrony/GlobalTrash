@@ -31,7 +31,6 @@ class Lock(val connection: Jedis, lockName: String) {
                     start = true
                     watchDog = true
                 }
-                println("锁 $it")
                 return it == 1L
             }
         } catch (e: Exception) {

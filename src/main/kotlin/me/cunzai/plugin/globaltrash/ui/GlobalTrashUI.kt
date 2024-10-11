@@ -23,6 +23,7 @@ import taboolib.module.ui.type.PageableChest
 import taboolib.platform.util.replaceLore
 import taboolib.platform.util.sendLang
 import java.util.UUID
+import java.util.concurrent.ConcurrentHashMap
 
 @Config("ui.yml")
 lateinit var uiConfig: Configuration
@@ -47,10 +48,14 @@ fun PageableChest<*>.setupBasic(player: Player) {
 }
 
 object GlobalTrashUI {
+    val usingPlayers = ConcurrentHashMap.newKeySet<UUID>()
+
     fun open(player: Player, search: String? = null) {
+        val add = usingPlayers.add(player.uniqueId)
+        if (!add) return
+
         submitChain {
             val items = getGlobalItems()
-            println("all item: ${items.size}")
             open(player, items, search)
         }
     }
@@ -137,6 +142,10 @@ object GlobalTrashUI {
                         }
                     }
                 }
+            }
+
+            onClose {
+                usingPlayers.remove(player.uniqueId)
             }
 
             setupBasic(player)
