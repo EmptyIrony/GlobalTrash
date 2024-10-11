@@ -1,12 +1,9 @@
 package me.cunzai.plugin.globaltrash.ui
 
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import me.cunzai.plugin.globaltrash.config.ConfigLoader
 import me.cunzai.plugin.globaltrash.database.addItem
-import me.cunzai.plugin.globaltrash.database.getItem
-import me.cunzai.plugin.globaltrash.database.getWriteLock
-import me.cunzai.plugin.globaltrash.database.removeItem
-import me.cunzai.plugin.globaltrash.ui.GlobalTrashUI.giveItem
-import org.bukkit.Bukkit
 import org.bukkit.entity.Player
 import org.bukkit.event.player.PlayerQuitEvent
 import org.bukkit.inventory.ItemStack
@@ -16,6 +13,7 @@ import taboolib.common.platform.Awake
 import taboolib.common.platform.Schedule
 import taboolib.common.platform.event.SubscribeEvent
 import taboolib.common.platform.function.submit
+import taboolib.expansion.AsyncDispatcher
 import taboolib.expansion.DispatcherType
 import taboolib.expansion.submitChain
 import taboolib.library.xseries.getItemStack
@@ -117,7 +115,11 @@ object TrashUI {
                 data.items.forEach { (_, item) ->
                     if (now - item.putTime >= ConfigLoader.clearTime * 1000L) {
                         data.items.remove(item.uuid)
-                        addItem(item.itemStack)
+                        withContext(AsyncDispatcher) {
+                            launch {
+                                addItem(item.itemStack)
+                            }
+                        }
                     }
                 }
             }

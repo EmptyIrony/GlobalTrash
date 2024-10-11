@@ -7,13 +7,30 @@ map:
   - "#########"
   - "#########"
   - "#########"
-  - "   <!>   "
+  - "   <!>$  "
+
+# @
+placeholder:
+  material: STONE
+
+# $
+search:
+  material: STONE
+  name: "搜索"
+  lore:
+    - "搜索内容: %search%"
+
+# <
 previous:
   material: ARROW
   name: "上一页"
+
+# >
 next:
   material: ARROW
   name: "下一页"
+
+# !
 back:
   material: BARRIER
   name: "返回"

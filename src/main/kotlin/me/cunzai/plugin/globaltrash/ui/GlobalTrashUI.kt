@@ -1,6 +1,7 @@
 package me.cunzai.plugin.globaltrash.ui
 
 import kotlinx.coroutines.withContext
+import me.cunzai.plugin.globaltrash.config.ConfigLoader
 import me.cunzai.plugin.globaltrash.database.getGlobalItems
 import me.cunzai.plugin.globaltrash.database.getItem
 import me.cunzai.plugin.globaltrash.database.getWriteLock
@@ -16,8 +17,10 @@ import taboolib.module.configuration.Config
 import taboolib.module.configuration.Configuration
 import taboolib.module.configuration.util.getStringColored
 import taboolib.module.nms.getName
+import taboolib.module.nms.inputSign
 import taboolib.module.ui.openMenu
 import taboolib.module.ui.type.PageableChest
+import taboolib.platform.util.replaceLore
 import taboolib.platform.util.sendLang
 import java.util.UUID
 
@@ -44,16 +47,31 @@ fun PageableChest<*>.setupBasic(player: Player) {
 }
 
 object GlobalTrashUI {
-    fun open(player: Player) {
+    fun open(player: Player, search: String? = null) {
         submitChain {
             val items = getGlobalItems()
-            open(player, items)
+            open(player, items, search)
         }
     }
 
-    private suspend fun open(player: Player, items: List<Pair<UUID, ItemStack>>) = withContext(SyncDispatcher) {
+    private suspend fun open(player: Player, items: List<Pair<UUID, ItemStack>>, search: String? = null) = withContext(SyncDispatcher) {
         player.openMenu<PageableChest<Pair<UUID, ItemStack>>>(uiConfig.getStringColored("title")!!) {
-            elements { items }
+            elements {
+                if (search.isNullOrBlank()) {
+                    items
+                } else {
+                    val keyWorlds = search.replace(" ", "")
+                        .replace("\"", "")
+
+                    val matchedMaterials = ConfigLoader.nameToMaterial.filter { (chineseName, material) ->
+                        chineseName.contains(keyWorlds, ignoreCase = true)
+                    }.values.toHashSet()
+
+                    items.filter {
+                        matchedMaterials.contains(it.second.type)
+                    }
+                }
+            }
             map(*uiConfig.getStringList("map").toTypedArray())
             slots(getSlots('#'))
             onGenerate { _, (_, item), _, _ -> item }
@@ -96,11 +114,33 @@ object GlobalTrashUI {
             }
             onClick { event -> event.isCancelled = true}
 
+
+            if (player.hasPermission("trash.search")) {
+                set('$', uiConfig.getItemStack("search")!!.replaceLore(
+                    mapOf("%search%" to (search ?: ""))
+                )) {
+                    isCancelled = true
+                    player.closeInventory()
+                    submit(delay = 1L) {
+                        player.inputSign(
+                            arrayOf(
+                                "",
+                                "~~~~~~~~~~",
+                                "在上方输入",
+                                "搜索内容"
+                            )
+                        ) {
+                            open(player, it.getOrNull(0))
+                        }
+                    }
+                }
+            }
+
             setupBasic(player)
         }
     }
 
-    suspend fun giveItem(player: Player, item: ItemStack) = withContext(SyncDispatcher) {
+    private suspend fun giveItem(player: Player, item: ItemStack) = withContext(SyncDispatcher) {
         player.inventory.addItem(item)
         player.sendLang("get_success", item.getName())
     }
