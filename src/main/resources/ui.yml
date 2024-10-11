@@ -1,0 +1,17 @@
+title: "123"
+map:
+  - "#########"
+  - "#########"
+  - "#########"
+  - "#########"
+  - "   <!>   "
+previous:
+  material: ARROW
+  name: "上一页"
+next:
+  material: ARROW
+  name: "下一页"
+back:
+  material: BARRIER
+  name: "返回"
+  command: "open %player%"
