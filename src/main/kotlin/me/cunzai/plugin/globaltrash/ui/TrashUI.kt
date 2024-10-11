@@ -4,6 +4,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import me.cunzai.plugin.globaltrash.config.ConfigLoader
 import me.cunzai.plugin.globaltrash.database.addItem
+import me.cunzai.plugin.globaltrash.database.getWriteLock
 import org.bukkit.entity.Player
 import org.bukkit.event.player.PlayerQuitEvent
 import org.bukkit.inventory.ItemStack
@@ -25,6 +26,7 @@ import taboolib.platform.util.isAir
 import taboolib.platform.util.sendLang
 import java.util.UUID
 import java.util.concurrent.CompletableFuture
+import java.util.concurrent.ConcurrentHashMap
 import kotlin.collections.HashMap
 
 object TrashUI {
@@ -72,6 +74,8 @@ object TrashUI {
                     uuid, currentItem, System.currentTimeMillis()
                 )
 
+                open(player)
+
                 player.sendLang("drop_success", currentItem.getName())
             }
 
@@ -83,28 +87,14 @@ object TrashUI {
     fun e(e: PlayerQuitEvent) {
         val data = cache.remove(e.player.uniqueId) ?: return
         submitChain {
-            for ((_, item) in data.items) {
-                addItem(item.itemStack)
-            }
-        }
-    }
-
-    @Awake(LifeCycle.DISABLE)
-    fun disable() {
-        val awaitFuture = CompletableFuture<Unit>()
-        submitChain {
-            try {
-                cache.forEach { (_, data) ->
-                    data.items.forEach { (_, item) ->
+            kotlin.runCatching {
+                getWriteLock {
+                    for ((_, item) in data.items) {
                         addItem(item.itemStack)
                     }
                 }
-            } finally {
-                awaitFuture.complete(Unit)
             }
         }
-
-        awaitFuture.join()
     }
 
     @Schedule(period = 20L)
@@ -117,7 +107,11 @@ object TrashUI {
                         data.items.remove(item.uuid)
                         withContext(AsyncDispatcher) {
                             launch {
-                                addItem(item.itemStack)
+                                kotlin.runCatching {
+                                    getWriteLock {
+                                        addItem(item.itemStack)
+                                    }
+                                }
                             }
                         }
                     }
@@ -127,7 +121,7 @@ object TrashUI {
     }
 
     data class TrashData(
-        val items: HashMap<UUID, SingleItemData> = HashMap()
+        val items: MutableMap<UUID, SingleItemData> = ConcurrentHashMap()
     )
 
     data class SingleItemData(

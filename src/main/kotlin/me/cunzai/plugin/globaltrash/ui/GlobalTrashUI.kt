@@ -50,6 +50,7 @@ object GlobalTrashUI {
     fun open(player: Player, search: String? = null) {
         submitChain {
             val items = getGlobalItems()
+            println("all item: ${items.size}")
             open(player, items, search)
         }
     }
@@ -107,7 +108,9 @@ object GlobalTrashUI {
                         }
                     } catch (e: IllegalStateException) {
                         clicker.sendLang("get_lock_failed")
-                        clicker.closeInventory()
+                        sync {
+                            clicker.closeInventory()
+                        }
                         return@submitChain
                     }
                 }
